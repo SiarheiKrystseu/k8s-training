@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: resources-ms
-          image: kristevsm/resource-service
+          image: kristevsm/resource-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
@@ -34,7 +35,28 @@ spec:
             - name: SONGS_MS_URL
               value: "http://songs-ms"
             - name: SONGS_MS_PORT
-              value: "8081"
+              value:
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 25
+            periodSeconds: 10
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            successThreshold: 20
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 30
 ---
 apiVersion: v1
 kind: Service

@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: songs-ms
-          image: kristevsm/song-service
+          image: kristevsm/song-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8081
           env:
@@ -31,6 +32,27 @@ spec:
               value: "true"
             - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
               value: "http://eureka-service.k8s-program.svc.cluster.local:8761/eureka/"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 25
+            periodSeconds: 10
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            successThreshold: 20
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 30
 
 ---
 apiVersion: v1
