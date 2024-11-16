@@ -14,6 +14,7 @@ data:
       length varchar(255),
       name varchar(255),
       year varchar(255),
+      genre varchar(255),
       PRIMARY KEY (id)
     );
 
