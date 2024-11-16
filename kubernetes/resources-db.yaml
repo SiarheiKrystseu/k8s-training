@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resources-db-deployment
+  namespace: k8s-program
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: resources-db
+  template:
+    metadata:
+      labels:
+        app: resources-db
+    spec:
+      containers:
+        - name: resources-db
+          image: postgres
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: resources-db-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-password
+          volumeMounts:
+            - mountPath: "/var/lib/postgresql/data"
+              name: postgres-storage
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: resources-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: resources-db
+  namespace: k8s-program
+spec:
+  type: ClusterIP
+  selector:
+    app: resources-db
+  ports:
+    - port: 5432
+      targetPort: 5432
