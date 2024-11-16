@@ -8,6 +8,11 @@ spec:
   selector:
     matchLabels:
       app: resources-ms
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   template:
     metadata:
       labels:

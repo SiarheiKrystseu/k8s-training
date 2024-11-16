@@ -8,6 +8,11 @@ spec:
   selector:
     matchLabels:
       app: songs-ms
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   template:
     metadata:
       labels:
@@ -15,7 +20,7 @@ spec:
     spec:
       containers:
         - name: songs-ms
-          image: kristevsm/song-service:latest
+          image: kristevsm/song-service:2.0
           imagePullPolicy: Always
           ports:
             - containerPort: 8081
