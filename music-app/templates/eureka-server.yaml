@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eureka-server-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: eureka-service  # Consistent with your previous configs
+spec:
+  replicas: {{ .Values.eureka.replicaCount }}
+  selector:
+    matchLabels:
+      app: eureka-service  # Must match labels applied to pod template
+  template:
+    metadata:
+      labels:
+        app: eureka-service
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    spec:
+      containers:
+        - name: eureka-server-container
+          image: {{ .Values.eureka.image }}
+          ports:
+            - containerPort: {{ .Values.eureka.eurekaPort }}
+          resources:
+            limits:
+              cpu: {{ .Values.eureka.resources.limits.cpu }}
+              memory: {{ .Values.eureka.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.eureka.resources.requests.cpu }}
+              memory: {{ .Values.eureka.resources.requests.memory }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eureka-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: eureka-service
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  selector:
+    app: eureka-service  # This must also match Deployment's label
+  ports:
+    - protocol: TCP
+      port: {{ .Values.eureka.eurekaPort }}
+      targetPort: {{ .Values.eureka.eurekaPort }}

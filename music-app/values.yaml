@@ -1,0 +1,81 @@
+namespace: music-app
+
+eureka:
+  image: kristevsm/eureka-server
+  eurekaPort: 8761
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+
+services:
+  songsMs:
+    image: kristevsm/song-service:2.0
+    songsMsPort: 8081
+    nodePort: 30081
+    replicaCount: 2
+    songsDbUrl: "songs-db"
+    songsDbPort: 5432
+    eurekaUri: "eureka-service"
+    enableEurekaClient: "true"
+    eurekaClientServiceUrlDefaultZone: "http://eureka-service.music-app.svc.cluster.local:8761/eureka/"
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+
+
+  resourcesMs:
+    image: kristevsm/resource-service:latest
+    resourcesMsPort: 8080
+    nodePort: 30080
+    replicaCount: 2
+    resourcesDbUrl: "resources-db"
+    resourcesDbPort: 5432
+    eurekaUri: "eureka-service"
+    enableEurekaClient: "true"
+    eurekaClientServiceUrlDefaultZone: "http://eureka-service.music-app.svc.cluster.local:8761/eureka/"
+    songsMsUrl: "http://songs-ms"
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+
+db:
+  songsDb:
+    image: postgres:13
+    replicaCount: 1
+    port: 5432
+    secretName: postgres-secret
+    volumeSize: "1Gi"
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+
+  resourcesDb:
+    image: postgres:13
+    replicaCount: 1
+    port: 5432
+    secretName: postgres-secret
+    volumeSize: "1Gi"
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+      requests:
+        cpu: "250m"
+        memory: "256Mi"

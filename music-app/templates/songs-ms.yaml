@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: songs-ms-deployment
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.services.songsMs.replicaCount }}
+  selector:
+    matchLabels:
+      app: songs-ms
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: songs-ms
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    spec:
+      containers:
+        - name: songs-ms
+          image: {{ .Values.services.songsMs.image }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.services.songsMs.songsMsPort }}
+          env:
+            - name: SONGS_MS_PORT
+              value: "{{ .Values.services.songsMs.songsMsPort }}"
+            - name: SONGS_DB_URL
+              value: "{{ .Values.services.songsMs.songsDbUrl }}"
+            - name: SONGS_DB_PORT
+              value: "{{ .Values.services.songsMs.songsDbPort }}"
+            - name: EUREKA_URI
+              value: "{{ .Values.services.songsMs.eurekaUri }}"
+            - name: ENABLE_EUREKA_CLIENT
+              value: "{{ .Values.services.songsMs.enableEurekaClient }}"
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: "{{ .Values.services.songsMs.eurekaClientServiceUrlDefaultZone }}"
+          resources:
+            limits:
+              cpu: {{ .Values.services.songsMs.resources.limits.cpu }}
+              memory: {{ .Values.services.songsMs.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.services.songsMs.resources.requests.cpu }}
+              memory: {{ .Values.services.songsMs.resources.requests.memory }}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: {{ .Values.services.songsMs.songsMsPort }}
+            initialDelaySeconds: 25
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: {{ .Values.services.songsMs.songsMsPort }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ .Values.services.songsMs.songsMsPort }}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: songs-ms
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: songs-ms
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  type: NodePort
+  selector:
+    app: songs-ms
+  ports:
+    - port: {{ .Values.services.songsMs.songsMsPort }}
+      targetPort: {{ .Values.services.songsMs.songsMsPort }}
+      nodePort: {{ .Values.services.songsMs.nodePort }}
