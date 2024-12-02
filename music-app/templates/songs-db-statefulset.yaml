@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: songs-db
+  namespace: {{ .Values.namespace }}
+spec:
+  serviceName: "songs-db"
+  replicas: {{ .Values.db.songsDb.replicaCount }}
+  selector:
+    matchLabels:
+      app: songs-db
+  template:
+    metadata:
+      labels:
+        app: songs-db
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.db.songsDb.image }}
+          ports:
+            - containerPort: {{ .Values.db.songsDb.port }}
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: songs-db-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.songsDb.secretName }}"
+                  key: postgres-songdb-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.songsDb.secretName }}"
+                  key: postgres-songdb-password
+          resources:
+            limits:
+              cpu: {{ .Values.db.songsDb.resources.limits.cpu }}
+              memory: {{ .Values.db.songsDb.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.db.songsDb.resources.limits.cpu }}
+              memory: {{ .Values.db.songsDb.resources.limits.memory }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.db.songsDb.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"
+            initialDelaySeconds: 20
+            timeoutSeconds: 10
+            periodSeconds: 5
+            failureThreshold: 6
+          volumeMounts:
+            - name: db-storage
+              mountPath: /var/lib/postgresql/data
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init-scripts
+          configMap:
+            name: songs-db-config
+            items:
+              - key: init.sql
+                path: init.sql
+  volumeClaimTemplates:
+    - metadata:
+        name: db-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "standard"
+        resources:
+          requests:
+            storage: {{ .Values.db.songsDb.volumeSize }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: songs-db
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: songs-db
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  ports:
+    - port: {{ .Values.db.songsDb.port }}
+      targetPort: {{ .Values.db.songsDb.port }}
+  selector:
+    app: songs-db
+  clusterIP: None  # For headless service

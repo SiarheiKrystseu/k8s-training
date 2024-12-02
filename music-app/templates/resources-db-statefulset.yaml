@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: resources-db
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: resources-db
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  serviceName: "resources-db"
+  replicas: {{ .Values.db.resourcesDb.replicaCount }}
+  selector:
+    matchLabels:
+      app: resources-db
+  template:
+    metadata:
+      labels:
+        app: resources-db
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.db.resourcesDb.image }}
+          ports:
+            - containerPort: {{ .Values.db.resourcesDb.port }}
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: resources-db-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.resourcesDb.secretName }}"
+                  key: postgres-resourcedb-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.db.resourcesDb.secretName }}"
+                  key: postgres-resourcedb-password
+          resources:
+            limits:
+              cpu: {{ .Values.db.resourcesDb.resources.limits.cpu }}
+              memory: {{ .Values.db.resourcesDb.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.db.resourcesDb.resources.limits.cpu }}
+              memory: {{ .Values.db.resourcesDb.resources.limits.memory }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.db.resourcesDb.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ['sh', '-c', 'pg_isready -U $POSTGRES_USER -d $POSTGRES_DB']
+            initialDelaySeconds: 20
+            timeoutSeconds: 10
+            periodSeconds: 5
+            failureThreshold: 6
+          volumeMounts:
+            - name: db-storage
+              mountPath: /var/lib/postgresql/data
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init-scripts
+          configMap:
+            name: resources-db-config
+            items:
+              - key: init.sql
+                path: init.sql
+  volumeClaimTemplates:
+    - metadata:
+        name: db-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "standard"
+        resources:
+          requests:
+            storage: {{ .Values.db.resourcesDb.volumeSize }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: resources-db
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: resources-db
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  ports:
+    - port: {{ .Values.db.resourcesDb.port }}
+      targetPort: {{ .Values.db.resourcesDb.port }}
+  selector:
+    app: resources-db
+  clusterIP: None  # Headless service
