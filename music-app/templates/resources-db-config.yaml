@@ -1,11 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: resources-db-config
+  name: {{ include "chart.name" . }}-db-config  # Changed name
   namespace: {{ .Values.namespace }}
   labels:
-    app: resources-db
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    {{- include "chart.labels" . | nindent 4 }}
 data:
   POSTGRES_DB: "postgres"
   init.sql: |
