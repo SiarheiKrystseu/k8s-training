@@ -16,7 +16,6 @@ services:
   songsMs:
     image: kristevsm/song-service:2.0
     songsMsPort: 8081
-    nodePort: 30081
     replicaCount: 2
     songsDbUrl: "songs-db"
     songsDbPort: 5432
@@ -35,7 +34,6 @@ services:
   resourcesMs:
     image: kristevsm/resource-service:latest
     resourcesMsPort: 8080
-    nodePort: 30080
     replicaCount: 2
     resourcesDbUrl: "resources-db"
     resourcesDbPort: 5432

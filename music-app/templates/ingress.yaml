@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+  namespace: {{ .Values.namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: "nginx"
+  rules:
+    - http:
+        paths:
+          - path: /songs(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: songs-ms
+                port:
+                  number: {{ .Values.services.songsMs.songsMsPort }}
+          - path: /resources(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: resources-ms
+                port:
+                  number: {{ .Values.services.resourcesMs.resourcesMsPort }}

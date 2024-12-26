@@ -78,10 +78,9 @@ metadata:
   name: resources-ms
   namespace: {{ .Values.namespace }}
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: resources-ms
   ports:
     - port: {{ .Values.services.resourcesMs.resourcesMsPort }}
       targetPort: {{ .Values.services.resourcesMs.resourcesMsPort }}
-      nodePort: {{ .Values.services.resourcesMs.nodePort }}
